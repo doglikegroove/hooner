@@ -1,5 +1,6 @@
 from tkinter import *
 from tkinter import ttk
+from player import play_track
 
 
 class SmartFrame(ttk.Frame):
@@ -13,6 +14,10 @@ class SmartFrame(ttk.Frame):
 
     def attach_library(self, library):
         self.library = library
+
+
+def _play_track(event):
+    play_track(event.widget.selection()[0])
 
 
 def _refresh_artist_box(artist_box, valid_tracks):
@@ -82,19 +87,14 @@ def _refresh_track_box(track_box, valid_tracks):
 
 
 def _refresh_display(event):
-    root_frame = event.widget.master
-    search_re = root_frame.children['search_box'].get()
+    if str(event.widget) == '.root_frame.search_frame.search_box':
+        search_re = event.widget.get()
+        root_frame = event.widget.master.master
+    else:
+        root_frame = event.widget.master
+        search_re = root_frame.children['search_frame'].children['search_box'].get()
     search_re.strip()
     new_track_list = set()
-    #new_album_artist_list = set()
-    #new_artist_list = set()
-    #new_album_list = set()
-
-    #def _add_track_to_lists(new_track):
-    #    new_track_list.add(new_track)
-    #    new_album_artist_list.add(root_frame.library['album_artists'][new_track.album_artist])
-    #    new_artist_list.add(root_frame.library['artists'][new_track.artist])
-    #    new_album_list.add(root_frame.library['albums'][new_track.album])
 
     def _match_track(track_to_check):
         import re
@@ -123,8 +123,8 @@ def _build_root_frame(root_window, library):
     root_frame = SmartFrame(root_window, name='root_frame')
     root_frame.attach_library(library)
     root_frame.grid(column=0, row=0, sticky=(N, W, E, S))
-    root_frame.columnconfigure(0, weight=1)
-    root_frame.columnconfigure(1, weight=2)
+    root_frame.columnconfigure(0, weight=3)
+    root_frame.columnconfigure(1, weight=5)
     root_frame.rowconfigure(0, weight=0)
     root_frame.rowconfigure(1, weight=1)
     root_frame.rowconfigure(2, weight=5)
@@ -137,10 +137,16 @@ def _build_menu_bar(root_window):
     return menu_bar
 
 
-def _build_search_box(root_frame):
-    search_box = ttk.Entry(root_frame, name='search_box')
+def _build_search_frame(root_frame):
+    search_frame = ttk.Frame(root_frame, name='search_frame')
+    search_frame.columnconfigure(0, weight=1)
+    search_frame.columnconfigure(1, weight=2)
+    search_frame.grid(column=1, row=0, sticky=(N, S, E))
+    search_box = ttk.Entry(search_frame, name='search_box')
     search_box.grid(column=1, row=0, sticky=(N, S, E))
-    return search_box
+    search_label = ttk.Label(search_frame, text='Search: ', anchor='w')
+    search_label.grid(column=0, row=0, sticky=(N, S, E))
+    return search_frame
 
 
 def _build_artist_box(root_frame):
@@ -179,14 +185,15 @@ def _build_display(library):
     root_window = _build_root_window()
     root_frame = _build_root_frame(root_window, library)
     menu_bar = _build_menu_bar(root_window)
-    search_box = _build_search_box(root_frame)
+    search_frame = _build_search_frame(root_frame)
     artist_box = _build_artist_box(root_frame)
     album_box = _build_album_box(root_frame)
     track_box = _build_track_box(root_frame)
-    search_box.bind('<KeyRelease>', _refresh_display)
+    search_frame.children['search_box'].bind('<KeyRelease>', _refresh_display)
     artist_box.bind('<ButtonRelease-1>', _refresh_display)
     album_box.bind('<ButtonRelease-1>', _refresh_display)
     artist_box.event_generate('<ButtonRelease-1>')
+    track_box.bind('<Double-1>', _play_track)
     menu_File = Menu(menu_bar)
     menu_bar.add_cascade(menu=menu_File, label='File')
     menu_File.add_command(label='Quit', command=lambda: exit(0))
